@@ -30,10 +30,10 @@ class RecipeRepository
             $options['perPage'] = 10;
         }
 
-        if (array_key_exists('ingredients', $options) && !empty($options['ingredients'])) {
-            $options['ingredients'] = explode(',', $options['ingredients']);
+        if (array_key_exists('categories', $options) && !empty($options['categories'])) {
+            $options['categories'] = explode(',', $options['categories']);
         } else {
-            $options['ingredients'] = [];
+            $options['categories'] = [];
         }
 
         if (!array_key_exists('text', $options)) {
@@ -47,47 +47,71 @@ class RecipeRepository
     {
         $options = $this->getDefaultFilterParams($options);
 
-        $resultSet = $this->model->with(['ingredients' => function ($query) {
-            $query->select('name');
-        }]);
+        $resultSet = $this->model->with([
+            'ingredients' => function ($query) {
+                $query->select('name');
+            },
+            'categories' => function ($query) {
+                $query->select('name');
+            }
+        ]);
 
         $this->applyOptions($resultSet, $options);
-
         return $resultSet->paginate($options['perPage']);
     }
 
     protected function applyOptions($resultSet, $options)
     {
-        if (!empty($options['ingredients'])) {
-            $this->applyIngredients($resultSet, $options['ingredients']);
+        $this->applyFields($resultSet);
+        if (!empty($options['categories'])) {
+            $this->applyCategories($resultSet, $options['categories']);
         }
 
         if (!empty($options['text'])) {
-            $this->applyText($resultSet, $options['text']);
+            $this->applyTexts($resultSet, $options['text']);
         }
 
         $dir = strpos($options['sort'], '-') !== false ? 'ASC' : 'DESC';
         $options['sort'] = str_replace('-', '', $options['sort']);
 
-        $resultSet->orderBy($options['sort'], $dir);
+        $resultSet->orderBy("rec_recipes.{$options['sort']}", $dir);
     }
 
-    protected function applyIngredients($resultSet, $ingredients)
+    protected function applyFields($resultSet)
     {
         $resultSet
-            ->join('rec_recipes_ingredients', 'rec_recipes_ingredients.recipe_id', '=', 'rec_recipes.id')
-            ->join('rec_ingredients', 'rec_recipes_ingredients.ingredient_id', '=', 'rec_ingredients.id')
-            ->whereIn('rec_ingredients.slug', $ingredients);
+            ->select(
+                'rec_recipes.id',
+                'rec_recipes.title',
+                'rec_recipes.release_at',
+                'rec_recipes.directions'
+            )
+            ->groupBy('rec_recipes.id');
     }
 
-    protected function applyText($resultSet, $text)
+    protected function applyCategories($resultSet, $categories)
+    {
+        $resultSet
+            ->join('rec_recipes_categories', 'rec_recipes_categories.recipe_id', '=', 'rec_recipes.id')
+            ->join('rec_categories', 'rec_recipes_categories.categorie_id', '=', 'rec_categories.id')
+            ->whereIn('rec_categories.slug', $categories);
+    }
+
+    protected function applyTexts($resultSet, $text)
     {
         $text = strtolower($text);
-        $resultSet->where(function ($query) use ($text) {
-            $query->whereRaw(\DB::raw("lower(rec_recipes.directions) like('%{$text}%')"))
-                ->orWhere(function ($q) use ($text) {
-                    $q->whereRaw(\DB::raw("lower(rec_recipes.title) like('%{$text}%')"));
-                });
+        $texts = explode(' ', $text);
+
+        $resultSet
+            ->join('rec_recipes_ingredients', 'rec_recipes_ingredients.recipe_id', '=', 'rec_recipes.id')
+            ->join('rec_ingredients', 'rec_recipes_ingredients.ingredient_id', '=', 'rec_ingredients.id');
+        $resultSet->where(function ($query) use ($texts) {
+            array_map(function ($text) use ($query) {
+                $query->orWhereRaw(\DB::raw("lower(rec_recipes.title) like('%{$text}%')"))
+                ->orWhereRaw(\DB::raw("lower(rec_recipes.directions) like('%{$text}%')"))
+                ->orWhereRaw(\DB::raw("lower(rec_ingredients.slug) like('%{$text}%')"))
+                ->orWhereRaw(\DB::raw("lower(rec_ingredients.name) like('%{$text}%')"));
+            }, $texts);
         });
     }
 }

@@ -21,7 +21,7 @@ class RecipesController extends BaseController
     public function filter(Request $request)
     {
         try {
-            $filter = $request->only('sort', 'text', 'page', 'perPage', 'ingredients');
+            $filter = $request->only('sort', 'text', 'page', 'perPage', 'categories');
             $data = $this->repository->filter($filter);
             ApiResponse::setAsSuccess()->setPayload($data);
         } catch (\Exception $e) {

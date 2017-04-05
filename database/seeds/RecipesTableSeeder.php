@@ -3,6 +3,7 @@
 use Illuminate\Database\Seeder;
 
 use App\Models\Ingredient;
+use App\Models\Categorie;
 use App\Models\Recipe;
 
 class RecipesTableSeeder extends Seeder
@@ -39,11 +40,25 @@ class RecipesTableSeeder extends Seeder
                         $recipe->save();
                     }, $item['ingredients']);
                 }
+
+                if (array_key_exists('categories', $item) && is_array($item['categories'])) {
+                    $listCategories = [];
+                    array_map(function ($categorie) use ($recipe, &$listCategories) {
+                        if (!array_key_exists('name', $categorie) ||
+                            in_array($categorie['name'], $listCategories)) {
+                            return;
+                        }
+
+                        $listCategories[] = $categorie['name'];
+                        $obj = $this->getCategorie($categorie['name']);
+                        $recipe->categories()->attach($obj->id);
+                        $recipe->save();
+                    }, $item['categories']);
+                }
             });
             \DB::commit();
         } catch (\Exception $e) {
             \DB::rollBack();
-            dd('erro', $e);
         }
     }
 
@@ -54,28 +69,21 @@ class RecipesTableSeeder extends Seeder
         ]);
     }
 
-    protected function getIngredients($names)
+    protected function getCategorie($name)
     {
-        if (!is_array($names)) {
-            return [];
-        }
-
-        $ingredients = array_map(function ($name) {
-            return Ingredient::firstOrCreate([
-                'name' => $name
-            ]);
-        }, $names);
-
-        return $ingredients;
+        return Categorie::firstOrCreate([
+            'name' => $name
+        ]);
     }
 
     protected function getRecipes()
     {
         try {
-            $data = file_get_contents('https://lucandrade.github.io/assets/recipes.json');
+            $data = file_get_contents(config('app.url') . '/recipes.json');
             $result = json_decode($data, true);
             return collect($result);
         } catch (\Exception $e) {
+            \Log::error($e);
             dd('Erro ao buscar receitas');
         }
     }

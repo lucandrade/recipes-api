@@ -11,7 +11,7 @@ class Recipe extends Model
 
     protected $fillable = ['title', 'directions', 'release_at'];
 
-    protected $sortable = ['title', 'release_at', 'id'];
+    protected $sortable = ['id', 'title', 'release_at'];
 
     public function getSortable()
     {
@@ -26,5 +26,15 @@ class Recipe extends Model
             'recipe_id',
             'ingredient_id'
         )->withPivot('amount');
+    }
+
+    public function categories()
+    {
+        return $this->belongsToMany(
+            'App\Models\Categorie',
+            'rec_recipes_categories',
+            'recipe_id',
+            'categorie_id'
+        );
     }
 }
