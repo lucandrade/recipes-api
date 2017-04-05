@@ -79,7 +79,7 @@ class RecipesTableSeeder extends Seeder
     protected function getRecipes()
     {
         try {
-            $data = file_get_contents(config('app.url') . '/recipes.json');
+            $data = file_get_contents(public_path('recipes.json'));
             $result = json_decode($data, true);
             return collect($result);
         } catch (\Exception $e) {
