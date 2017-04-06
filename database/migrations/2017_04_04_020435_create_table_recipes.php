@@ -16,6 +16,7 @@ class CreateTableRecipes extends Migration
         Schema::create('rec_recipes', function (Blueprint $table) {
             $table->increments('id');
             $table->string('title');
+            $table->string('image')->nullable();
             $table->longText('directions');
             $table->timestamp('release_at')->default(\DB::raw('CURRENT_TIMESTAMP'));
             $table->boolean('status')->default(true);

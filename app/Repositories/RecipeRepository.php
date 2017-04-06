@@ -83,6 +83,7 @@ class RecipeRepository
             ->select(
                 'rec_recipes.id',
                 'rec_recipes.title',
+                'rec_recipes.image',
                 'rec_recipes.release_at',
                 'rec_recipes.directions'
             )
