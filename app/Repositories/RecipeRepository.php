@@ -62,7 +62,8 @@ class RecipeRepository
                 $query->select('name');
             },
             'ingredients' => function ($query) {
-                $query->where('status', true)->select('recipe_id', 'text');
+                $query->where('status', true)
+                    ->select('recipe_id', 'text as name');
             }
         ]);
 
@@ -169,7 +170,8 @@ class RecipeRepository
 
         if (array_key_exists('url', $formData) && !empty($formData['url'])) {
             $recipe = $this->getByUrl($formData['url']);
-            
+            $this->saveImported($formData['url']);
+
             if ($recipe) {
                 return $recipe;
             }
@@ -177,7 +179,22 @@ class RecipeRepository
 
         $recipe = $this->model->create($formData);
         $this->saveIngredients($recipe, $data['ingredients']);
+        $this->saveCategories($recipe, $data['categories']);
         return $recipe;
+    }
+
+    protected function saveImported($url)
+    {
+        $db = \DB::table('rec_urls');
+        $imported = $db->where('url', $url)->first();
+
+        if (!$imported) {
+            $db->insert(['url' => $url, 'imported' => true]);
+        }
+
+        if (!$imported->imported) {
+            $db->where('url', $url)->update(['imported' => true]);
+        }
     }
 
     protected function saveIngredients(Recipe $recipe, $ingredients)
@@ -206,6 +223,8 @@ class RecipeRepository
 
     protected function getCategorie($name)
     {
-        return $this->categorie->where('slug', $name)->first();
+        return $this->categorie->firstOrCreate([
+            'name' => $name
+        ]);
     }
 }
