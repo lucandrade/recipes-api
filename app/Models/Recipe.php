@@ -20,12 +20,10 @@ class Recipe extends Model
 
     public function ingredients()
     {
-        return $this->belongsToMany(
+        return $this->hasMany(
             'App\Models\Ingredient',
-            'rec_recipes_ingredients',
-            'recipe_id',
-            'ingredient_id'
-        )->withPivot('amount', 'text');
+            'recipe_id'
+        );
     }
 
     public function categories()

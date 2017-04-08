@@ -19,4 +19,5 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 
 Route::group(['prefix' => 'recipes'], function () {
     Route::get('/', 'RecipesController@filter');
+    Route::post('/', 'RecipesController@create');
 });

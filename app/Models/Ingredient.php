@@ -3,31 +3,17 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Cviebrock\EloquentSluggable\Sluggable;
 
 class Ingredient extends Model
 {
-    use Sluggable;
-
     protected $table = 'rec_ingredients';
 
-    protected $fillable = ['name'];
-
-    public function sluggable()
-    {
-        return [
-            'slug' => [
-                'source' => 'name'
-            ]
-        ];
-    }
+    protected $fillable = ['text'];
 
     public function recipes()
     {
-        return $this->belongsToMany(
+        return $this->belongsTo(
             'App\Models\Recipe',
-            'rec_recipes_ingredients',
-            'ingredient_id',
             'recipe_id'
         );
     }

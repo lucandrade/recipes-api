@@ -3,15 +3,25 @@
 namespace App\Repositories;
 
 use App\Models\Recipe;
+use App\Models\Ingredient;
+use App\Models\Categorie;
+use App\Exceptions\GenericException;
 
 class RecipeRepository
 {
 
     protected $model;
+    protected $ingredient;
+    protected $categorie;
 
-    public function __construct(Recipe $recipe)
-    {
+    public function __construct(
+        Recipe $recipe,
+        Ingredient $ingredient,
+        Categorie $categorie
+    ) {
         $this->model = $recipe;
+        $this->ingredient = $ingredient;
+        $this->categorie = $categorie;
     }
 
     protected function getDefaultFilterParams($options)
@@ -48,11 +58,11 @@ class RecipeRepository
         $options = $this->getDefaultFilterParams($options);
 
         $resultSet = $this->model->with([
-            'ingredients' => function ($query) {
-                $query->select('name');
-            },
             'categories' => function ($query) {
                 $query->select('name');
+            },
+            'ingredients' => function ($query) {
+                $query->where('status', true)->select('recipe_id', 'text');
             }
         ]);
 
@@ -104,15 +114,98 @@ class RecipeRepository
         $texts = explode(' ', $text);
 
         $resultSet
-            ->join('rec_recipes_ingredients', 'rec_recipes_ingredients.recipe_id', '=', 'rec_recipes.id')
-            ->join('rec_ingredients', 'rec_recipes_ingredients.ingredient_id', '=', 'rec_ingredients.id');
+            ->join('rec_ingredients', 'rec_recipes.id', '=', 'rec_ingredients.recipe_id');
         $resultSet->where(function ($query) use ($texts) {
             array_map(function ($text) use ($query) {
                 $query->orWhereRaw(\DB::raw("lower(rec_recipes.title) like('%{$text}%')"))
                 ->orWhereRaw(\DB::raw("lower(rec_recipes.directions) like('%{$text}%')"))
-                ->orWhereRaw(\DB::raw("lower(rec_ingredients.slug) like('%{$text}%')"))
-                ->orWhereRaw(\DB::raw("lower(rec_ingredients.name) like('%{$text}%')"));
+                ->orWhereRaw(\DB::raw("lower(rec_ingredients.text) like('%{$text}%')"));
             }, $texts);
         });
+    }
+
+    public function getByUrl($url)
+    {
+        return $this->model->where('url', $url)->first();
+    }
+
+    protected function getFillable()
+    {
+        return $this->model->getFillable();
+    }
+
+    protected function validate(array $data)
+    {
+        if (!(array_key_exists('title', $data) && !empty($data['title']))) {
+            throw new GenericException("Campo title é obrigatório");
+        }
+
+        if (!(array_key_exists('directions', $data) && !empty($data['directions']))) {
+            throw new GenericException("Campo directions é obrigatório");
+        }
+
+        if (!(
+            array_key_exists('ingredients', $data) &&
+            is_array($data['ingredients']) &&
+            !empty($data['ingredients'])
+        )) {
+            throw new GenericException("Campo ingredients é obrigatório");
+        }
+
+        if (!(
+            array_key_exists('categories', $data) &&
+            is_array($data['categories']) &&
+            !empty($data['categories'])
+        )) {
+            throw new GenericException("Campo categories é obrigatório");
+        }
+    }
+
+    public function save(array $data)
+    {
+        $this->validate($data);
+        $fields = $this->getFillable();
+        $formData = array_only($data, $fields);
+
+        if (array_key_exists('url', $formData) && !empty($formData['url'])) {
+            $recipe = $this->getByUrl($formData['url']);
+            
+            if ($recipe) {
+                return $recipe;
+            }
+        }
+
+        $recipe = $this->model->create($formData);
+        $this->saveIngredients($recipe, $data['ingredients']);
+        return $recipe;
+    }
+
+    protected function saveIngredients(Recipe $recipe, $ingredients)
+    {
+        array_map(function ($ingredient) use ($recipe) {
+            $obj = $this->getIngredient($ingredient);
+            $recipe->ingredients()->save($obj);
+        }, $ingredients);
+    }
+
+    protected function saveCategories(Recipe $recipe, $categories)
+    {
+        array_map(function ($categorie) use ($recipe) {
+            $obj = $this->getCategorie($categorie);
+            $recipe->categories()->attach($obj->id);
+            $recipe->save();
+        }, $categories);
+    }
+
+    protected function getIngredient($text)
+    {
+        return new Ingredient([
+            'text' => $text
+        ]);
+    }
+
+    protected function getCategorie($name)
+    {
+        return $this->categorie->where('slug', $name)->first();
     }
 }

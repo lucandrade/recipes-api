@@ -35,12 +35,7 @@ class RecipesTableSeeder extends Seeder
                         }
 
                         $obj = $this->getIngredient($ingredient['text']);
-                        $amount = array_key_exists('amount', $ingredient) ? $ingredient['amount'] : null;
-                        $recipe->ingredients()->attach($obj->id, [
-                            'amount' => $amount,
-                            'text' => $ingredient['text']
-                        ]);
-                        $recipe->save();
+                        $recipe->ingredients()->save($obj);
                     }, $item['ingredients']);
                 }
 
@@ -65,10 +60,10 @@ class RecipesTableSeeder extends Seeder
         }
     }
 
-    protected function getIngredient($name)
+    protected function getIngredient($text)
     {
-        return Ingredient::firstOrCreate([
-            'name' => $name
+        return new Ingredient([
+            'text' => $text
         ]);
     }
 
