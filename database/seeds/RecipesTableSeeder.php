@@ -36,7 +36,10 @@ class RecipesTableSeeder extends Seeder
 
                         $obj = $this->getIngredient($ingredient['text']);
                         $amount = array_key_exists('amount', $ingredient) ? $ingredient['amount'] : null;
-                        $recipe->ingredients()->attach($obj->id, ['amount' => $amount]);
+                        $recipe->ingredients()->attach($obj->id, [
+                            'amount' => $amount,
+                            'text' => $ingredient['text']
+                        ]);
                         $recipe->save();
                     }, $item['ingredients']);
                 }

@@ -18,7 +18,8 @@ class CreateTableRecipes extends Migration
             $table->string('title');
             $table->string('image')->nullable();
             $table->longText('directions');
-            $table->timestamp('release_at')->default(\DB::raw('CURRENT_TIMESTAMP'));
+            $table->timestamp('release_at')
+                ->default(\DB::raw('CURRENT_TIMESTAMP'));
             $table->boolean('status')->default(true);
             $table->timestamps();
         });

@@ -27,6 +27,7 @@ class CreateTableIngredients extends Migration
             $table->integer('ingredient_id')->unsigned();
             $table->foreign('ingredient_id')->references('id')->on('rec_ingredients');
             $table->integer('amount')->nullable();
+            $table->string('text')->nullable();
         });
     }
 

@@ -25,7 +25,7 @@ class Recipe extends Model
             'rec_recipes_ingredients',
             'recipe_id',
             'ingredient_id'
-        )->withPivot('amount');
+        )->withPivot('amount', 'text');
     }
 
     public function categories()
