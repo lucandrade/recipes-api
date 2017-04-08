@@ -9,7 +9,7 @@ class Recipe extends Model
 
     protected $table = 'rec_recipes';
 
-    protected $fillable = ['title', 'directions', 'release_at', 'image'];
+    protected $fillable = ['title', 'directions', 'release_at', 'image', 'url'];
 
     protected $sortable = ['id', 'title', 'release_at'];
 
